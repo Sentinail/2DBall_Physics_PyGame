@@ -10,6 +10,8 @@ surface = pygame.display.set_mode((WIDTH, HEIGHT))
 
 clock = pygame.time.Clock()
 
+pygame.font.init()
+
 # Creating Ball Class
 class Ball:
 
@@ -37,10 +39,6 @@ class Ball:
             self.y = mousePos[1]
 
 
-# Creating Object arrays for Obj access
-ballObjs = []
-
-
 # Distance Formula
 def distanceObj_Obj(objX, objY, objX2, objY2):
     distanceX = objX2 - objX
@@ -55,12 +53,24 @@ def normalize(x, y):
         return x / length, y / length
     else:
         return 0, 0
-
+    
+def drawText(text, font, textCol, x, y):
+    img = font.render(text, True, textCol)
+    surface.blit(img, (x, y))
 
 def gravitationalAcceleration(mass1, mass2, z):
     acceleration = (mass1 * mass2 * 100) / z ** 2
     return acceleration
 
+# Game Font
+font = pygame.font.SysFont("Arial", 20)
+
+# Creating Object arrays for Obj access
+ballObjs = []
+
+# Physics States
+gravitationalForce = 0
+isCoulomb = False
 
 running = True
 while running:
@@ -83,6 +93,19 @@ while running:
                 ))
                 ballObjs.append(ball)
 
+            if event.key == pygame.K_r:
+                if (len(ballObjs) > 0):
+                    ballObjs.pop()
+
+            if event.key == pygame.K_q:
+                isCoulomb = not isCoulomb
+
+            if event.key == pygame.K_w:
+                gravitationalForce+= 0.5
+
+            if event.key == pygame.K_e:
+                gravitationalForce-= 0.5
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 events.append("leftClickDown")
@@ -93,7 +116,7 @@ while running:
 
     for obj in ballObjs:
         accelerationX = 0
-        accelerationY = 0
+        accelerationY = gravitationalForce
 
         for obj2 in ballObjs:
             if obj2 != obj and ballObjs:
@@ -102,7 +125,13 @@ while running:
                 distance = distances[2]
 
                 # Calculating Acceleration Due to Size of Obj
-                accelerationDueObj = gravitationalAcceleration(obj.size, obj2.size, distance)
+                accelerationDueObj = 0
+
+                if (isCoulomb):
+                    accelerationDueObj = gravitationalAcceleration(obj.size, obj2.size, distance)
+                else:
+                    accelerationDueObj = 0
+                
                 accelerationX += (-1 * (distances[0] / distances[2]) * accelerationDueObj) / obj.size
                 accelerationY += (-1 * (distances[1] / distances[2]) * accelerationDueObj) / obj.size
 
@@ -198,6 +227,20 @@ while running:
     # DATA DISPLAYS
     surface.fill("white")
 
+    # Display Game State
+    drawText(f"Number Of Objects: {len(ballObjs)}", font, (0, 0, 0), 0, 0)
+    drawText(f"Coulomb Force: {isCoulomb}", font, (0, 0, 0), 0, 30)
+    drawText(f"Gravity Intensity: {gravitationalForce}", font, (0, 0, 0), 0, 60)
+
+    # Display Controls
+    drawText(f"Toggle Coulomb: Q", font, (0, 0, 0), 0, HEIGHT - 30)
+    drawText(f"↓ Gravity: E", font, (0, 0, 0), 0, HEIGHT - 60)
+    drawText(f"↑ Gravity: W", font, (0, 0, 0), 0, HEIGHT - 90)
+    drawText(f"Remove Object: R", font, (0, 0, 0), 0, HEIGHT - 120)
+    drawText(f"Create Object: SPACE", font, (0, 0, 0), 0, HEIGHT - 150)
+    drawText(f"Drag Object: MOUSE DRAG", font, (0, 0, 0), 0, HEIGHT - 180)
+
+    # Display Ball Objects
     for display in ballObjs:
         display.displayObj()
 
